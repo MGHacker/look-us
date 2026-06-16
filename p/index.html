@@ -3,13 +3,19 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Score d'autorité · Look Us</title>
-<meta name="description" content="Un score d'autorité mesuré sur 5 dimensions avec Look Us. Pas un compteur de followers." />
+<title>Mon score d'autorité LinkedIn · Look Us</title>
+<meta name="description" content="Score d'autorité mesuré sur 5 dimensions avec Look Us — Reach, Resonance, Consistency, Momentum, Breadth. Pas un compteur de followers. Mesure le tien." />
 <meta name="theme-color" content="#100f0e" />
-<meta property="og:title" content="Score d'autorité · Look Us" />
+<meta name="robots" content="noindex, nofollow" />
+<link rel="canonical" href="/" />
+<meta property="og:title" content="Mon score d'autorité LinkedIn · Look Us" />
 <meta property="og:description" content="Mesuré sur 5 dimensions (Reach, Resonance, Consistency, Momentum, Breadth). Pas un compteur de followers. Mesure le tien." />
 <meta property="og:type" content="website" />
-<meta name="twitter:card" content="summary_large_image" />
+<meta property="og:locale" content="fr_FR" />
+<meta property="og:site_name" content="Look Us" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Mon score d'autorité LinkedIn · Look Us" />
+<meta name="twitter:description" content="Mesuré sur 5 dimensions. Pas un compteur de followers. Mesure le tien." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
@@ -43,13 +49,17 @@
     </div>
     <div class="instrument-rule" aria-hidden="true"><span>Reach·15</span><span>Reso·35</span><span>Consist·20</span><span>Moment·20</span><span>Breadth·10</span></div>
     <div class="share-cta">
-      <p>Pas un compteur de followers — une mesure d'autorité, pondérée et anti-vanity.</p>
-      <a class="btn btn-gold" href="../">Mesure ton autorité →</a>
+      <p>Ce score ne compte pas tes followers. Il mesure si tu as une position.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a class="btn btn-gold" href="../">Calculer le mien →</a>
+        <button class="btn btn-line" id="card-btn">⤓ Télécharger cette carte</button>
+      </div>
     </div>
   </div>
   <p class="share-watermark">Calculé avec <b>Look&nbsp;Us</b> · <a href="../">look-us</a></p>
 </main>
 
+<script src="../assets/share-card.js"></script>
 <script>
 (function () {
   var DIMS = [
@@ -98,6 +108,8 @@
     var v = d[x.k];
     return '<div class="dim"><div class="dim-row"><span class="dim-name">' + x.label + ' <em>' + x.w + '</em></span><span class="dim-val">' + Math.round(v) + '</span></div><div class="dim-track"><div class="dim-fill" style="width:' + v + '%;background:' + x.color + '"></div></div></div>';
   }).join("");
+  var cardBtn = document.querySelector("#card-btn");
+  if (cardBtn && window.LookUsCard) cardBtn.addEventListener("click", function () { window.LookUsCard.download({ total: total, tier: tier, dimensions: d }, "look-us-carte.png"); });
 })();
 </script>
 </body>

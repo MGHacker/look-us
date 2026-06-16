@@ -1,0 +1,11 @@
+{
+  "name": "look-us-web",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Look Us — app web statique (cockpit d'autorité). Aucune build ; tests du moteur via le runner natif de Node.",
+  "scripts": {
+    "test": "node --test",
+    "serve": "node _serve.mjs"
+  }
+}

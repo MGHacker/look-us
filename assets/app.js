@@ -56,19 +56,24 @@
     $("#radar").innerHTML = g;
   }
 
+  /* ---------- tier (derive depuis le score, pour les vieux snapshots sans tier) ---------- */
+  function tierOf(s) { return s >= 80 ? "AUTHORITY" : s >= 60 ? "ESTABLISHED" : s >= 40 ? "GROWING" : "EMERGING"; }
+
   /* ---------- sparkline ---------- */
-  function drawSparkline(hist) {
-    var wrap = $("#sparkline-wrap");
-    if (hist.length < 2) { wrap.innerHTML = '<p class="spark-promise">Reviens mesurer dans 7 jours — ta trajectoire apparaîtra ici.</p>'; return; }
-    var pts = hist.slice(-8), W = 600, H = 46, pad = 5;
-    var scores = pts.map(function (p) { return p.score; });
+  // Construit le SVG (ou null si < 2 points). Reutilise par le cockpit ET la modale historique.
+  function sparklineSVG(hist, W, H, n) {
+    var pts = hist.slice(-(n || 8)); if (pts.length < 2) return null;
+    var pad = 5, scores = pts.map(function (p) { return p.score; });
     var min = Math.min.apply(null, scores) - 4, max = Math.max.apply(null, scores) + 4; if (max - min < 1) max = min + 1;
     var xy = pts.map(function (p, i) { return [pad + i * (W - 2 * pad) / (pts.length - 1), H - pad - ((p.score - min) / (max - min)) * (H - 2 * pad)]; });
     var line = xy.map(function (p) { return p.join(","); }).join(" "), last = xy[xy.length - 1];
-    wrap.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none"><defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9b949" stop-opacity=".16"/><stop offset="1" stop-color="#e9b949" stop-opacity="0"/></linearGradient></defs>' +
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none"><defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9b949" stop-opacity=".16"/><stop offset="1" stop-color="#e9b949" stop-opacity="0"/></linearGradient></defs>' +
       '<polygon points="' + pad + ',' + (H - pad) + ' ' + line + ' ' + (W - pad) + ',' + (H - pad) + '" fill="url(#sg)"/>' +
       '<polyline points="' + line + '" fill="none" stroke="#e9b949" stroke-width="1.5" vector-effect="non-scaling-stroke"/>' +
       '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="3" fill="#e9b949"/></svg>';
+  }
+  function drawSparkline(hist) {
+    $("#sparkline-wrap").innerHTML = sparklineSVG(hist, 600, 46, 8) || '<p class="spark-promise">Reviens mesurer dans 7 jours — ta trajectoire apparaîtra ici.</p>';
   }
 
   /* ---------- .ics reminder ---------- */
@@ -77,7 +82,7 @@
     function z(n) { return ("0" + n).slice(-2); }
     function fmt(d) { return d.getUTCFullYear() + z(d.getUTCMonth() + 1) + z(d.getUTCDate()) + "T" + z(d.getUTCHours()) + z(d.getUTCMinutes()) + "00Z"; }
     var ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Look Us//FR", "BEGIN:VEVENT", "UID:" + Date.now() + "@look-us", "DTSTAMP:" + fmt(new Date()), "DTSTART:" + fmt(dt), "DURATION:PT15M", "SUMMARY:Relevé Look Us — mesurer mon autorité LinkedIn", "DESCRIPTION:Reviens noter tes chiffres pour voir l'évolution de ton score d'autorité.", "END:VEVENT", "END:VCALENDAR"].join("\r\n");
-    download("look-us-rappel.ics", ics, "text/calendar"); toast("Rappel .ics téléchargé — ajoute-le à ton agenda");
+    download("look-us-rappel.ics", ics, "text/calendar"); toast("Relevé planifié — ajoute le .ics à ton agenda");
   }
 
   /* ---------- delta ---------- */
@@ -85,7 +90,7 @@
     var db = $("#delta-block"); db.hidden = false;
     var weeks = Math.max(1, Math.round(getHistory().length));
     var streak = getHistory().length >= 2 ? '<span class="streak">' + getHistory().length + ' relevés de suivi</span>' : "";
-    var ics = '<a class="ics-link" id="remind-btn">🔔 Rappel dans 7 jours</a>';
+    var ics = '<a class="ics-link" id="remind-btn">🔔 Mesurer dans 7 jours</a>';
     if (!prevSnap) { db.innerHTML = '<span class="delta-first">Premier relevé enregistré — reviens dans 7 jours pour voir ta progression.</span>' + ics; }
     else {
       var diff = res.total - prevSnap.score, days = Math.max(1, Math.round((Date.now() - prevSnap.ts) / 86400000));
@@ -97,28 +102,43 @@
   }
 
   /* ---------- recos (cochables) ---------- */
-  function renderRecos(d) {
+  // Libelle "N active(s) · M complétée(s)" — source unique pour init + maj live.
+  function coachCountLabel(total, done) {
+    if (!total) return "—";
+    var active = total - done;
+    return active + " active" + (active > 1 ? "s" : "") + (done ? " · " + done + " complétée" + (done > 1 ? "s" : "") : "");
+  }
+  // Recalcule le compteur depuis le DOM (après un toggle) — pas de recompute du score.
+  function updateCoachCount() {
+    var el = $("#coach-h .coach-count"); if (!el) return;
+    el.textContent = coachCountLabel($$("#recos .reco[data-rule]").length, $$("#recos .reco.is-done").length);
+  }
+  // Purge les clés "fait" dont la règle ne se déclenche plus (preuve implicite de progression).
+  function purgeStaleDone(validRuleIds) {
+    var keep = {}; validRuleIds.forEach(function (id) { keep["lus_done_" + id] = 1; });
+    for (var i = localStorage.length - 1; i >= 0; i--) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf("lus_done_") === 0 && !keep[k]) localStorage.removeItem(k);
+    }
+  }
+  function renderRecos(d, isLive) {
     var recos = window.LookUsScoring.recommend(d), done = 0;
+    if (isLive) purgeStaleDone(recos.map(function (r) { return r.ruleId; }));
     $("#recos").innerHTML = recos.length ? recos.map(function (r) {
       var isDone = localStorage.getItem("lus_done_" + r.ruleId) === "1"; if (isDone) done++;
       return '<li class="reco' + (isDone ? " is-done" : "") + '" data-p="' + r.priority + '" data-rule="' + r.ruleId + '"><span class="reco-p">' + r.priority + '</span><div class="reco-body"><b>' + r.action + '</b><span class="reco-i">' + r.expectedImpact + ' · KPI : ' + r.metric + '</span></div><button class="reco-done-btn">' + (isDone ? "✓ Fait" : "Fait") + '</button></li>';
     }).join("") : '<li class="empty-reco">Rien de critique — ton autorité est solide. Continue.</li>';
-    var active = recos.length - done;
-    $("#coach-h").innerHTML = 'Plan d\'action <span class="coach-count">' + (recos.length ? (active + " active" + (active > 1 ? "s" : "") + (done ? " · " + done + " complétée" + (done > 1 ? "s" : "") : "")) : "—") + '</span> <span class="coach-tag">déterministe · zéro IA</span>';
+    $("#coach-h").innerHTML = 'Plan d\'action <span class="coach-count">' + coachCountLabel(recos.length, done) + '</span> <span class="coach-tag">déterministe · zéro IA</span>';
   }
   $("#recos").addEventListener("click", function (e) {
     var btn = e.target.closest(".reco-done-btn"); if (!btn) return;
     var li = btn.closest(".reco"), id = li.getAttribute("data-rule"), key = "lus_done_" + id;
-    var now = localStorage.getItem(key) === "1";
-    if (now) { localStorage.removeItem(key); li.classList.remove("is-done"); btn.textContent = "Fait"; }
+    if (localStorage.getItem(key) === "1") { localStorage.removeItem(key); li.classList.remove("is-done"); btn.textContent = "Fait"; }
     else {
       localStorage.setItem(key, "1"); li.classList.add("is-done"); btn.textContent = "✓ Fait";
       var fb = $("#reco-feedback"); fb.hidden = false; fb.textContent = "Bien joué. Reviens dans 7 jours mesurer l'impact."; clearTimeout(renderRecos._t); renderRecos._t = setTimeout(function () { fb.hidden = true; }, 4000);
     }
-    if (lastResult) { // recompute counter
-      var done = $$("#recos .reco.is-done").length, total = $$("#recos .reco").length, active = total - done;
-      $("#coach-count") || $("#coach-h").querySelector(".coach-count") && ($("#coach-h").querySelector(".coach-count").textContent = active + " active" + (active > 1 ? "s" : "") + (done ? " · " + done + " complétée" + (done > 1 ? "s" : "") : ""));
-    }
+    updateCoachCount();
   });
 
   /* ---------- render ---------- */
@@ -145,7 +165,7 @@
       return '<div class="dim"><div class="dim-row"><span class="dim-name">' + (isLever ? '<span class="dim-dot"></span>' : '') + x.label + ' <em>' + x.w + '</em></span><span class="dim-val">' + val + '</span></div><div class="dim-track"><div class="dim-fill" style="background:' + x.color + '"></div></div>' + (isLever ? '<span class="dim-lever">Levier principal · +1 pt ici = +' + x.w.replace("%", "/100") + ' pt de score</span>' : '') + '</div>';
     }).join("");
     setTimeout(function () { $$(".dim-fill").forEach(function (f, i) { f.style.width = d[DIMS[i].k] + "%"; }); }, 60);
-    renderRecos(d);
+    renderRecos(d, !ctx.demo);
     refreshHistBtn();
     if (!ctx.demo) ck.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
@@ -166,7 +186,7 @@
     render(lastResult, { demo: demo, prevSnap: prevSnap, hadPrev: hadPrev });
     if (!demo) {
       var raw = metricsRaw(lastMetrics);
-      pushSnapshot({ ts: Date.now(), reachRaw: raw.reachRaw, er: raw.er, score: lastResult.total, dims: lastResult.dimensions });
+      pushSnapshot({ ts: Date.now(), reachRaw: raw.reachRaw, er: raw.er, score: lastResult.total, tier: lastResult.tier, dims: lastResult.dimensions });
       refreshHistBtn();
     }
   }
@@ -174,9 +194,47 @@
   $("#clear-demo").addEventListener("click", function () { $("#cockpit").hidden = true; var f = $('[name="followers"]'); if (f) f.focus(); $("#hero").scrollIntoView({ behavior: "smooth" }); });
   $$("[data-jump]").forEach(function (b) { b.addEventListener("click", function () { $("#view-capture").scrollIntoView({ behavior: "smooth" }); var f = $('[name="followers"]'); if (f) setTimeout(function () { f.focus(); }, 400); }); });
 
-  /* ---------- history button ---------- */
-  function refreshHistBtn() { var h = getHistory(), b = $("#hist-btn"); if (h.length) { b.hidden = false; $("#hist-n").textContent = h.length; } }
-  $("#hist-btn").addEventListener("click", function () { var sp = $("#sparkline-wrap"); if (!$("#cockpit").hidden) sp.scrollIntoView({ behavior: "smooth", block: "center" }); toast(getHistory().length + " relevé(s) enregistré(s) sur cet appareil"); });
+  /* ---------- history button + modale trajectoire ---------- */
+  function refreshHistBtn() { var h = getHistory(), b = $("#hist-btn"); b.hidden = h.length === 0; if (h.length) $("#hist-n").textContent = h.length; }
+
+  function histTableHTML(hist) {
+    if (!hist.length) return '<tbody><tr><td class="hist-empty">Aucun relevé enregistré pour l\'instant.</td></tr></tbody>';
+    var rows = hist.map(function (s, i) { return { s: s, diff: i > 0 ? s.score - hist[i - 1].score : null }; }).reverse();
+    var head = '<thead><tr><th class="c-date">Date</th><th>Score</th><th>Tier</th><th>Δ</th><th title="Reach">R</th><th title="Resonance">Re</th><th title="Consistency">C</th><th title="Momentum">M</th><th title="Breadth">B</th></tr></thead>';
+    var body = rows.map(function (r) {
+      var s = r.s, d = s.dims || {}, tier = s.tier || tierOf(s.score);
+      var dt = new Date(s.ts).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit" });
+      var dcell = r.diff == null ? '<span class="flat">—</span>' : '<span class="' + (r.diff > 0.05 ? "up" : r.diff < -0.05 ? "down" : "flat") + '">' + (r.diff > 0 ? "+" : r.diff < 0 ? "−" : "") + Math.abs(r.diff).toFixed(1) + '</span>';
+      return '<tr><td class="c-date">' + dt + '</td><td class="c-score">' + Math.round(s.score) + '</td><td class="c-tier">' + tier + '</td><td>' + dcell + '</td><td>' + Math.round(d.reach) + '</td><td>' + Math.round(d.resonance) + '</td><td>' + Math.round(d.consistency) + '</td><td>' + Math.round(d.momentum) + '</td><td>' + Math.round(d.breadth) + '</td></tr>';
+    }).join("");
+    return head + '<tbody>' + body + '</tbody>';
+  }
+  function renderHist() {
+    var hist = getHistory();
+    $("#hist-sub").textContent = hist.length ? (hist.length + " relevé" + (hist.length > 1 ? "s" : "") + " · sur cet appareil") : "Aucun relevé encore — mesure ton score pour démarrer.";
+    $("#hist-spark").innerHTML = sparklineSVG(hist, 600, 90, 12) || '<p class="spark-promise">Il faut au moins 2 relevés pour tracer une courbe.</p>';
+    $("#hist-table").innerHTML = histTableHTML(hist);
+  }
+  var histLastFocus = null;
+  function histKey(e) { if (e.key === "Escape") closeHist(); }
+  function openHist() { renderHist(); histLastFocus = document.activeElement; $("#hist-modal").hidden = false; document.body.style.overflow = "hidden"; document.addEventListener("keydown", histKey); setTimeout(function () { $("#hist-close").focus(); }, 30); }
+  function closeHist() { $("#hist-modal").hidden = true; document.body.style.overflow = ""; document.removeEventListener("keydown", histKey); if (histLastFocus && histLastFocus.focus) histLastFocus.focus(); }
+  $("#hist-btn").addEventListener("click", openHist);
+  $("#hist-close").addEventListener("click", closeHist);
+  $("#hist-modal").addEventListener("click", function (e) { if (e.target.hasAttribute("data-close")) closeHist(); });
+  $("#hist-export").addEventListener("click", function () {
+    var hist = getHistory(); if (!hist.length) { toast("Aucun relevé à exporter"); return; }
+    var cols = ["capturedAt", "score", "tier", "reach", "resonance", "consistency", "momentum", "breadth"];
+    var lines = hist.map(function (s) { var d = s.dims || {}; return [new Date(s.ts).toISOString(), s.score, s.tier || tierOf(s.score), d.reach, d.resonance, d.consistency, d.momentum, d.breadth].join(","); });
+    download("look-us-historique.csv", cols.join(",") + "\n" + lines.join("\n") + "\n"); toast("Historique exporté (" + hist.length + " relevés)");
+  });
+  $("#hist-reset").addEventListener("click", function () {
+    if (!getHistory().length) { toast("Historique déjà vide"); return; }
+    if (!window.confirm("Effacer définitivement tous tes relevés sur cet appareil ? Action irréversible.")) return;
+    localStorage.removeItem("lus_history");
+    for (var i = localStorage.length - 1; i >= 0; i--) { var k = localStorage.key(i); if (k && k.indexOf("lus_done_") === 0) localStorage.removeItem(k); }
+    refreshHistBtn(); renderHist(); closeHist(); toast("Historique réinitialisé");
+  });
 
   /* ---------- export / import CSV ---------- */
   function download(name, text, type) { var b = new Blob([text], { type: type || "text/csv;charset=utf-8" }); var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = name; a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500); }
@@ -203,10 +261,17 @@
     var payload = { t: lastResult.total, tier: lastResult.tier, d: lastResult.dimensions };
     var enc = btoa(unescape(encodeURIComponent(JSON.stringify(payload)))).replace(/\+/g, "-").replace(/\//g, "_");
     var u = new URL("p/", location.href); u.hash = "v1-" + enc;
-    var url = u.href, text = "Mon score d'autorité LinkedIn : " + Math.round(lastResult.total) + "/100 · " + lastResult.tier + " — mesuré sur 5 dimensions (pas un compteur de followers). Mesure le tien :";
+    var url = u.href, text = "Autorité LinkedIn mesurée : " + Math.round(lastResult.total) + "/100 · " + lastResult.tier + " — 5 dimensions pondérées, pas de followers dans l'équation. Le tien :";
     if (navigator.share) { navigator.share({ title: "Mon score d'autorité", text: text, url: url }).catch(function () { }); }
     else if (navigator.clipboard) { navigator.clipboard.writeText(url).then(function () { toast("Lien de partage copié"); }); }
     else { window.prompt("Copie ce lien :", url); }
+  });
+
+  /* ---------- carte de partage PNG ---------- */
+  $("#card-btn").addEventListener("click", function () {
+    if (!lastResult || $("#cockpit").getAttribute("data-mode") === "demo") { toast("Mesure d'abord ton score"); return; }
+    if (!window.LookUsCard) { toast("Carte indisponible"); return; }
+    window.LookUsCard.download(lastResult, "look-us-carte.png"); toast("Carte téléchargée — poste-la sur LinkedIn");
   });
 
   /* ---------- init ---------- */

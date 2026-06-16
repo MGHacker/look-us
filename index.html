@@ -3,12 +3,22 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Look Us — l'instrument de mesure de ton autorité</title>
-<meta name="description" content="Mesure ton autorité d'expert sur 5 dimensions (pas un compteur de followers). Suis ta trajectoire semaine après semaine, et partage ton score." />
+<title>Look Us — Mesure ton autorité LinkedIn sur 5 dimensions</title>
+<meta name="description" content="Mesure ton autorité LinkedIn sur 5 dimensions pondérées (Reach, Resonance, Consistency, Momentum, Breadth). Pas un compteur de followers — une vraie mesure d'impact B2B, suivie semaine après semaine." />
 <meta name="theme-color" content="#100f0e" />
-<meta property="og:title" content="Look Us — mesure ton autorité d'expert" />
-<meta property="og:description" content="Un score d'autorité sur 5 dimensions. Pas un compteur de followers." />
+<link rel="canonical" href="/" />
+<meta property="og:title" content="Look Us — Mesure ton autorité LinkedIn sur 5 dimensions" />
+<meta property="og:description" content="5 dimensions pondérées, moteur déterministe, anti-vanity. Mesure ton autorité — pas tes followers." />
 <meta property="og:type" content="website" />
+<meta property="og:locale" content="fr_FR" />
+<meta property="og:site_name" content="Look Us" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Look Us — Mesure ton autorité LinkedIn sur 5 dimensions" />
+<meta name="twitter:description" content="5 dimensions pondérées, moteur déterministe, anti-vanity. Mesure ton autorité — pas tes followers." />
+<!-- TODO déploiement : ajouter og:url + og:image (assets/og-home.png 1200×630) absolus une fois le domaine connu ; voir docs/v3-round-design.md. -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"Look Us","description":"Instrument de mesure de l'autorité d'expert sur 5 dimensions pondérées — Reach, Resonance, Consistency, Momentum, Breadth. Moteur déterministe anti-vanity, pour les professionnels B2B.","applicationCategory":"BusinessApplication","operatingSystem":"All","browserRequirements":"Requires JavaScript","inLanguage":"fr-FR","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"featureList":["Score d'autorité sur 5 dimensions","Suivi de trajectoire hebdomadaire","Moteur déterministe sans IA","Carte de partage PNG","Export CSV"]}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
@@ -33,10 +43,10 @@
   <section class="hero" id="hero">
     <p class="kicker"><span class="dot"></span> Instrument d'autorité · e-réputation B2B</p>
     <h1 class="display">
-      Ton expertise a une <em>valeur</em>.<br />
-      <span class="ghost">Mesure-la.</span>
+      Ce que tu publies a du <em>poids</em>.<br />
+      <span class="ghost">Prouve-le.</span>
     </h1>
-    <p class="lede">Un score d'autorité sur 5 dimensions — pas un compteur de followers. Mesure-le chaque semaine, vois ta trajectoire, et partage-le comme preuve.</p>
+    <p class="lede">Cinq dimensions pondérées. Aucune vanité. Un chiffre qui dit ce que les followers ne disent pas : si ton contenu construit vraiment une position.</p>
     <div class="hero-cta">
       <button class="btn btn-gold" data-jump="form">Calculer mon score →</button>
     </div>
@@ -71,7 +81,7 @@
     </div>
 
     <div class="panel cockpit" id="cockpit" data-mode="demo" hidden>
-      <div class="demo-banner" id="demo-banner">Aperçu d'exemple · <button id="clear-demo">saisis tes chiffres pour ton vrai score →</button></div>
+      <div class="demo-banner" id="demo-banner">Données d'exemple · <button id="clear-demo">entre tes chiffres pour voir ton score réel →</button></div>
 
       <div class="cockpit-top">
         <div class="score-block">
@@ -99,8 +109,9 @@
       </div>
 
       <div class="cockpit-foot">
+        <button class="btn btn-gold" id="card-btn">⤓ Télécharger ma carte</button>
+        <button class="btn btn-line" id="share-btn">⧉ Rendre mon score public</button>
         <button class="btn btn-line" id="export-btn">⤓ Exporter en CSV</button>
-        <button class="btn btn-gold" id="share-btn">⧉ Partager mon score</button>
       </div>
       <div class="instrument-rule" aria-hidden="true"><span>Reach·15</span><span>Reso·35</span><span>Consist·20</span><span>Moment·20</span><span>Breadth·10</span></div>
     </div>
@@ -112,9 +123,29 @@
   </footer>
 </main>
 
+<div class="modal" id="hist-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hist-title">
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel" role="document">
+    <div class="modal-head">
+      <div>
+        <h2 class="modal-title" id="hist-title">Ta trajectoire</h2>
+        <p class="modal-sub" id="hist-sub">Tes relevés, sur cet appareil.</p>
+      </div>
+      <button class="modal-x" id="hist-close" aria-label="Fermer">✕</button>
+    </div>
+    <div class="hist-spark" id="hist-spark"></div>
+    <div class="hist-table-wrap"><table class="hist-table" id="hist-table"></table></div>
+    <div class="hist-foot">
+      <button class="btn btn-line" id="hist-export">⤓ Exporter tout l'historique</button>
+      <button class="btn btn-line btn-danger" id="hist-reset">Réinitialiser l'historique</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="./assets/scoring.js"></script>
+<script src="./assets/share-card.js"></script>
 <script src="./assets/app.js"></script>
 </body>
 </html>

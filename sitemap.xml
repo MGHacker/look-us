@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  IMPORTANT : remplacer "https://REMPLACER-PAR-DOMAINE/" par le domaine réel
+  avant la mise en production (ex. https://lookus.app/ ou le domaine Netlify
+  par défaut https://votre-site.netlify.app/).
+  /p/ est intentionnellement absent : ces pages sont personnelles (score dans
+  le fragment #hash) et bloquées dans robots.txt — les inclure serait inutile.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://REMPLACER-PAR-DOMAINE/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
