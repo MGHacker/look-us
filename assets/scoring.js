@@ -71,5 +71,13 @@
     return limit ? out.slice(0, limit) : out;
   }
 
-  global.LookUsScoring = { compute: compute, recommend: recommend };
+  // Sensibilite : combien 1 dimension peut rapporter au score total (gain x poids).
+  // Sert a designer "le levier principal" (la dim au meilleur ratio impact).
+  function sensitivityAnalysis(d) {
+    return ["reach", "resonance", "consistency", "momentum", "breadth"].map(function (k) {
+      return { dim: k, gain: r1(Math.min(10, 100 - d[k]) * W[k]), headroom: r1(100 - d[k]) };
+    }).sort(function (a, b) { return b.gain - a.gain; });
+  }
+
+  global.LookUsScoring = { compute: compute, recommend: recommend, sensitivityAnalysis: sensitivityAnalysis, WEIGHTS: W };
 })(window);

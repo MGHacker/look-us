@@ -4,8 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Look Us — l'instrument de mesure de ton autorité</title>
-<meta name="description" content="Mesure ton autorité d'expert (e-réputation) sur 5 dimensions, capture-la sur mobile, et achemine-la vers ton FTP, ton CRM ou ta base de données depuis le desktop." />
+<meta name="description" content="Mesure ton autorité d'expert sur 5 dimensions (pas un compteur de followers). Suis ta trajectoire semaine après semaine, et partage ton score." />
 <meta name="theme-color" content="#100f0e" />
+<meta property="og:title" content="Look Us — mesure ton autorité d'expert" />
+<meta property="og:description" content="Un score d'autorité sur 5 dimensions. Pas un compteur de followers." />
+<meta property="og:type" content="website" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
@@ -22,133 +25,90 @@
     </span>
     <span class="brand-name">Look&nbsp;Us</span>
   </a>
-  <nav class="modes" role="tablist" aria-label="Mode">
-    <button class="mode-tab is-active" data-mode="capture" role="tab" aria-selected="true">
-      <span class="mt-ico">◎</span> Capture <span class="mt-sub">mobile</span>
-    </button>
-    <button class="mode-tab" data-mode="console" role="tab" aria-selected="false">
-      <span class="mt-ico">⧉</span> Console <span class="mt-sub">desktop</span>
-    </button>
-  </nav>
+  <button class="hist-btn" id="hist-btn" hidden>Historique <span class="hist-n" id="hist-n">0</span></button>
 </header>
 
 <main class="shell">
 
-  <!-- HERO -->
   <section class="hero" id="hero">
     <p class="kicker"><span class="dot"></span> Instrument d'autorité · e-réputation B2B</p>
     <h1 class="display">
       Ton expertise a une <em>valeur</em>.<br />
       <span class="ghost">Mesure-la.</span>
     </h1>
-    <p class="lede">Un score d'autorité sur 5 dimensions — pas un compteur de followers. Capture-le sur ton téléphone, achemine-le vers ton FTP, ton CRM ou ta base depuis le desktop.</p>
+    <p class="lede">Un score d'autorité sur 5 dimensions — pas un compteur de followers. Mesure-le chaque semaine, vois ta trajectoire, et partage-le comme preuve.</p>
     <div class="hero-cta">
-      <button class="btn btn-gold" data-jump="capture">Calculer mon score →</button>
-      <button class="btn btn-ghost" data-jump="console">J'ai déjà un CSV</button>
+      <button class="btn btn-gold" data-jump="form">Calculer mon score →</button>
     </div>
   </section>
 
-  <!-- CAPTURE (mobile-first) -->
-  <section class="view view-capture is-active" id="view-capture" role="tabpanel" aria-label="Capture">
+  <section class="view is-active" id="view-capture">
     <div class="panel form-panel">
       <div class="panel-head">
-        <h2 class="sh">01 · Capture</h2>
-        <p class="sh-sub">Saisis tes chiffres LinkedIn des 30 derniers jours. Tout reste sur ton appareil.</p>
+        <h2 class="sh">01 · Tes chiffres</h2>
+        <p class="sh-sub">Saisis tes stats LinkedIn des 30 derniers jours (Analytics → Vue d'ensemble). Tout reste sur ton appareil.</p>
       </div>
 
       <form id="capture-form" class="grid-form" autocomplete="off">
-        <label class="field"><span>Abonnés</span><input type="number" name="followers" min="0" inputmode="numeric" placeholder="12 000" value="12000" /></label>
-        <label class="field"><span>Relations</span><input type="number" name="connections" min="0" inputmode="numeric" placeholder="5 000" value="0" /></label>
-        <label class="field"><span>Impressions (30j)</span><input type="number" name="impressions30d" min="0" inputmode="numeric" placeholder="40 000" value="40000" /></label>
-        <label class="field"><span>Réactions (30j)</span><input type="number" name="reactions30d" min="0" inputmode="numeric" placeholder="600" value="600" /></label>
-        <label class="field"><span>Commentaires (30j)</span><input type="number" name="comments30d" min="0" inputmode="numeric" placeholder="120" value="120" /></label>
-        <label class="field"><span>Republications (30j)</span><input type="number" name="reposts30d" min="0" inputmode="numeric" placeholder="40" value="40" /></label>
-        <label class="field"><span>Semaines actives <em>/13</em></span><input type="number" name="activeWeeks90d" min="0" max="13" inputmode="numeric" placeholder="13" value="13" /></label>
-        <label class="field"><span>Plus long silence <em>(sem.)</em></span><input type="number" name="maxGapWeeks" min="0" max="13" inputmode="numeric" placeholder="0" value="0" /></label>
-        <label class="field field-wide"><span>Canaux actifs <em>(LinkedIn = 1)</em></span><input type="number" name="channels" min="1" max="4" inputmode="numeric" value="1" /></label>
+        <label class="field"><span>Abonnés</span><input type="number" name="followers" min="0" inputmode="numeric" placeholder="12 000" /></label>
+        <label class="field"><span>Relations</span><input type="number" name="connections" min="0" inputmode="numeric" placeholder="5 000" /></label>
+        <label class="field"><span>Impressions <em>· 30 jours</em></span><input type="number" name="impressions30d" min="0" inputmode="numeric" placeholder="40 000" /><span class="field-hint">Analytics LinkedIn → Vue d'ensemble</span></label>
+        <label class="field"><span>Réactions <em>· 30 jours</em></span><input type="number" name="reactions30d" min="0" inputmode="numeric" placeholder="600" /><span class="field-hint">Commentaires ×2, repartages ×3 dans le score</span></label>
+        <label class="field"><span>Commentaires <em>· 30 jours</em></span><input type="number" name="comments30d" min="0" inputmode="numeric" placeholder="120" /></label>
+        <label class="field"><span>Repartages reçus <em>· reposts, 30j</em></span><input type="number" name="reposts30d" min="0" inputmode="numeric" placeholder="40" /></label>
+        <label class="field"><span>Semaines avec ≥ 1 post <em>· sur 13</em></span><input type="number" name="activeWeeks90d" min="0" max="13" inputmode="numeric" placeholder="13" /></label>
+        <label class="field"><span>Plus longue pause <em>· semaines, 0 si aucune</em></span><input type="number" name="maxGapWeeks" min="0" max="13" inputmode="numeric" placeholder="0" /></label>
+        <label class="field field-wide"><span>Présences actives <em>· LinkedIn=1, newsletter=+1, X=+1</em></span><input type="number" name="channels" min="1" max="4" inputmode="numeric" placeholder="1" /></label>
       </form>
 
       <div class="form-foot">
         <label class="file-btn">
           <input type="file" id="capture-import" accept=".csv,text/csv" hidden />
-          <span>⇪ Importer l'export LinkedIn (.csv)</span>
+          <span>⇪ Importer un CSV Look&nbsp;Us</span>
         </label>
-        <button class="btn btn-gold" id="compute-btn">Mesurer →</button>
+        <button class="btn btn-gold" id="compute-btn">Mesurer mon autorité →</button>
       </div>
     </div>
 
-    <!-- COCKPIT -->
-    <div class="panel cockpit" id="cockpit" hidden>
+    <div class="panel cockpit" id="cockpit" data-mode="demo" hidden>
+      <div class="demo-banner" id="demo-banner">Aperçu d'exemple · <button id="clear-demo">saisis tes chiffres pour ton vrai score →</button></div>
+
       <div class="cockpit-top">
         <div class="score-block">
           <div class="score-num" id="score-num">—</div>
           <div class="score-meta">
             <span class="tier-badge" id="tier-badge">—</span>
             <span class="score-cap">Score d'autorité · /100</span>
+            <div class="delta-block" id="delta-block" hidden></div>
           </div>
         </div>
-        <div class="score-ring" id="score-ring" aria-hidden="true"></div>
+        <svg id="score-ring" class="dial" viewBox="0 0 140 140" width="128" height="128" aria-hidden="true"></svg>
       </div>
 
-      <div class="dims" id="dims"></div>
+      <div class="sparkline-wrap" id="sparkline-wrap"></div>
+
+      <div class="viz">
+        <svg id="radar" viewBox="0 0 240 240" aria-hidden="true"></svg>
+        <div class="dims" id="dims"></div>
+      </div>
 
       <div class="coach">
-        <h3 class="coach-h">Plan d'action <span class="coach-tag">coach déterministe</span></h3>
+        <h3 class="coach-h" id="coach-h">Plan d'action <span class="coach-tag">coach déterministe</span></h3>
         <ul class="recos" id="recos"></ul>
+        <p class="reco-feedback" id="reco-feedback" hidden></p>
       </div>
 
       <div class="cockpit-foot">
         <button class="btn btn-line" id="export-btn">⤓ Exporter en CSV</button>
-        <button class="btn btn-line" id="to-console-btn">Acheminer ce score →</button>
+        <button class="btn btn-gold" id="share-btn">⧉ Partager mon score</button>
       </div>
-    </div>
-  </section>
-
-  <!-- CONSOLE (desktop) -->
-  <section class="view view-console" id="view-console" role="tabpanel" aria-label="Console" hidden>
-    <div class="panel">
-      <div class="panel-head">
-        <h2 class="sh">02 · Console d'acheminement</h2>
-        <p class="sh-sub">Importe le CSV produit sur mobile, puis pousse-le vers la destination de ton client.</p>
-      </div>
-
-      <label class="dropzone" id="dropzone">
-        <input type="file" id="console-import" accept=".csv,text/csv" hidden />
-        <div class="dz-inner">
-          <span class="dz-ico">⇪</span>
-          <b>Dépose ton CSV ici</b>
-          <span class="dz-sub" id="dz-status">ou clique pour parcourir</span>
-        </div>
-      </label>
-
-      <div class="csv-preview" id="csv-preview" hidden></div>
-    </div>
-
-    <div class="panel" id="integration-panel" hidden>
-      <div class="panel-head">
-        <h2 class="sh">03 · Destination</h2>
-        <p class="sh-sub">Choisis où envoyer la donnée. Les identifiants ne quittent pas ton navigateur (envoi réel = fonction serverless, à brancher).</p>
-      </div>
-
-      <div class="dest-tabs" role="tablist">
-        <button class="dest-tab is-active" data-dest="ftp">FTP / SFTP</button>
-        <button class="dest-tab" data-dest="crm">CRM</button>
-        <button class="dest-tab" data-dest="db">Base de données</button>
-      </div>
-
-      <div class="dest-body" id="dest-body"></div>
-
-      <div class="dest-foot">
-        <button class="btn btn-gold" id="send-btn">Acheminer la donnée →</button>
-        <button class="btn btn-line" id="copy-payload">⧉ Copier le payload</button>
-      </div>
-      <pre class="payload" id="payload" hidden></pre>
+      <div class="instrument-rule" aria-hidden="true"><span>Reach·15</span><span>Reso·35</span><span>Consist·20</span><span>Moment·20</span><span>Breadth·10</span></div>
     </div>
   </section>
 
   <footer class="site-foot">
-    <span>Look&nbsp;Us · l'autorité, mesurée et acheminée.</span>
-    <span class="foot-meta">Moteur anti-vanity · Reach 15 · Resonance 35 · Consistency 20 · Momentum 20 · Breadth 10</span>
+    <span>Look&nbsp;Us · l'autorité, mesurée — pas comptée.</span>
+    <span class="foot-meta">Moteur déterministe · anti-vanity · 5 dimensions pondérées</span>
   </footer>
 </main>
 
