@@ -64,7 +64,7 @@ test.describe("fumée", () => {
   }
 
   for (const { route, file } of PAGES) {
-    test(`${route} se charge sans erreur (${file})`, async ({ page, baseURL }) => {
+    test(`${route} se charge sans erreur (${file})`, async ({ page, request, baseURL }) => {
       const problems = watchProblems(page, new URL(baseURL!).origin);
 
       const resp = await page.goto(route, { waitUntil: "domcontentloaded" });
