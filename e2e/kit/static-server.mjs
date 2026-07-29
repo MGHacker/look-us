@@ -95,7 +95,11 @@ const server = createServer(async (req, res) => {
       const shell = await firstExisting([join(ROOT, "index.html")]);
       if (shell) {
         const body = await readFile(shell);
-        res.writeHead(200, { "content-type": MIME[".html"], "cache-control": "no-store" });
+        res.writeHead(200, {
+          "content-type": MIME[".html"],
+          "content-length": body.byteLength,
+          "cache-control": "no-store",
+        });
         return res.end(body);
       }
     }
@@ -103,7 +107,10 @@ const server = createServer(async (req, res) => {
     const notFound = await firstExisting([join(ROOT, "404.html")]);
     if (notFound) {
       const body = await readFile(notFound);
-      res.writeHead(404, { "content-type": MIME[".html"] });
+      res.writeHead(404, {
+        "content-type": MIME[".html"],
+        "content-length": body.byteLength,
+      });
       return res.end(body);
     }
     res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
@@ -114,7 +121,17 @@ const server = createServer(async (req, res) => {
     const body = await readFile(file);
     res.writeHead(200, {
       "content-type": MIME[extname(file).toLowerCase()] ?? "application/octet-stream",
+      // `content-length` explicite : sans lui, Node répond en chunked. Le
+      // navigateur ne peut alors pas distinguer une réponse complète d'une
+      // réponse coupée, et un module JS tronqué se manifeste par un
+      // « SyntaxError: Invalid or unexpected token » au point de coupure,
+      // sans indiquer qu'il s'agit d'un problème de transport.
+      "content-length": body.byteLength,
       "cache-control": "no-store",
+      // Pas de réutilisation de connexion : un serveur de test n'a rien à
+      // gagner du keep-alive, et ça retire une source de confusion de plus
+      // quand plusieurs contextes de navigateur tapent la même URL en parallèle.
+      connection: "close",
     });
     res.end(body);
   } catch {
