@@ -33,29 +33,35 @@ test.describe("liens", () => {
       expect(broken, `liens cassés sur ${route}`).toEqual([]);
     });
 
-    test(`${route} : toutes les images se chargent`, async ({ page, baseURL }) => {
+    test(`${route} : toutes les images se chargent`, async ({ page, request, baseURL }) => {
       await page.goto(route, { waitUntil: "domcontentloaded" });
       await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {});
 
       const origin = new URL(baseURL!).origin;
 
-      // naturalWidth === 0 après chargement = image cassée (404, chemin faux…).
+      // On juge sur la RÉPONSE du serveur, pas sur les dimensions décodées.
+      //
+      // Le réflexe `naturalWidth === 0` est trompeur : un SVG dont la racine n'a
+      // que `viewBox`, sans `width` ni `height`, n'a pas de taille intrinsèque et
+      // rapporte donc 0 dans Chromium — alors qu'il s'affiche parfaitement, la
+      // taille venant du CSS ou des attributs de la balise `img`. Ce critère
+      // signalait ces images comme cassées à tort.
+      //
       // Restreint aux images du site : une image hébergée chez un tiers dépend
       // d'un réseau qu'on ne maîtrise pas et rendrait le test instable.
-      const broken = await page.locator("img").evaluateAll(
+      const sources = await page.locator("img[src]").evaluateAll(
         (els, org) =>
           els
-            .filter((el) => {
-              const img = el as HTMLImageElement;
-              if (!img.currentSrc && !img.src) return false;
-              if (!(img.src || "").startsWith(org)) return false;
-              // Les images en lazy hors écran ne sont pas encore décodées : on
-              // ne juge que celles que le navigateur a réellement tenté de charger.
-              return img.complete && img.naturalWidth === 0;
-            })
-            .map((el) => (el as HTMLImageElement).getAttribute("src") ?? "(sans src)"),
+            .map((el) => (el as HTMLImageElement).src)
+            .filter((src) => src && src.startsWith(org)),
         origin,
       );
+
+      const broken: string[] = [];
+      for (const src of [...new Set(sources)]) {
+        const r = await request.get(src);
+        if (r.status() >= 400) broken.push(`${src} -> HTTP ${r.status()}`);
+      }
 
       expect(broken, `images cassées sur ${route}`).toEqual([]);
     });
