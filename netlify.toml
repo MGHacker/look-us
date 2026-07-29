@@ -3,6 +3,12 @@
   publish = "."
   command = ""
 
+[build.environment]
+  # Le package.json de la racine ne sert qu'à l'outillage de test (Playwright).
+  # Sans cette variable, l'installation des dépendances par Netlify téléchargerait
+  # les navigateurs (~150 Mo) pour rien : le déploiement n'exécute aucun test.
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
+
 [[headers]]
   for = "/*"
   [headers.values]

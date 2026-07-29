@@ -1,0 +1,117 @@
+name: E2E (Playwright)
+
+# Suite de bout en bout : le site est servi en local et testé dans un vrai
+# Chromium. Aucun secret, aucune dépendance à la prod : le job valide le code de
+# la branche, pas l'état du déploiement.
+#
+# Deux étages, volontairement :
+#
+#   1. « intégrité »  — BLOQUANT. Le site se charge, aucun lien interne mort,
+#      aucune image cassée. Si ça casse, c'est une régression : la PR ne passe
+#      pas.
+#
+#   2. « qualité »    — RAPPORT. SEO technique, accessibilité et rendu mobile
+#      tournent en entier, mais le job reste vert : la dette existante sur ces
+#      trois axes ne doit pas bloquer une PR qui ne fait que la révéler.
+#      Les constats ne sont pas masqués pour autant : ils sont écrits dans le
+#      résumé du run (visible d'un coup d'œil depuis la PR) et le rapport HTML
+#      complet est publié en artefact.
+#
+#      L'échec du test est absorbé au niveau de l'ÉTAPE (`continue-on-error`
+#      sur le step, pas sur le job). Sur le job, GitHub marquerait le check
+#      lui-même en rouge, ce qui bloquerait le merge : exactement ce qu'on
+#      cherche à éviter ici.
+#
+# Quand la dette est résorbée : supprimer le `continue-on-error` de l'étape
+# « SEO, accessibilité et mobile » pour rendre cet étage bloquant lui aussi.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integrite:
+    name: Intégrité (bloquant)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Installer les dépendances
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - name: Installer Chromium (+ librairies système)
+        run: npx playwright install --with-deps chromium
+      - name: Fumée et liens
+        run: npx playwright test e2e/smoke.spec.ts e2e/links.spec.ts
+      - name: Publier le rapport en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-integrite
+          path: playwright-report/
+          retention-days: 7
+
+  qualite:
+    name: Qualité (rapport)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Installer les dépendances
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - name: Installer Chromium (+ librairies système)
+        run: npx playwright install --with-deps chromium
+
+      - name: SEO, accessibilité et mobile
+        id: qualite
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npx playwright test e2e/seo.spec.ts e2e/a11y.spec.ts e2e/responsive.spec.ts \
+            2>&1 | tee /tmp/qualite.log
+
+      - name: Résumer les constats
+        if: always()
+        run: |
+          {
+            echo "## Qualité — SEO, accessibilité, mobile"
+            echo
+            if [ "${{ steps.qualite.outcome }}" = "success" ]; then
+              echo "Aucun constat. Les trois axes sont au vert."
+              echo
+              echo "C'est le moment de retirer le \`continue-on-error\` de l'étape"
+              echo "« SEO, accessibilité et mobile » dans \`.github/workflows/e2e.yml\`,"
+              echo "pour que cet étage devienne bloquant."
+            else
+              echo "Dette relevée sur cette branche. Ce job reste vert volontairement :"
+              echo "il rapporte, il ne bloque pas. Détail complet dans l'artefact"
+              echo "\`rapport-qualite\`."
+              echo
+              echo '```'
+              grep -E "^\s+[0-9]+\) " -A 3 /tmp/qualite.log \
+                | grep -E "Error:" | sed 's/^ *Error: //' | sort | uniq -c | sort -rn \
+                | head -40 || echo "(aucun constat isolable, voir le log complet)"
+              echo '```'
+              echo
+              grep -oE "[0-9]+ (passed|failed)" /tmp/qualite.log | tail -2 | tr '\n' ' '
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publier le rapport
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-qualite
+          path: playwright-report/
+          retention-days: 7
