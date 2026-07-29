@@ -22,15 +22,25 @@ export const test = base.extend({
   page: async ({ page, baseURL }, use) => {
     if (!process.env.E2E_ALLOW_THIRD_PARTY && baseURL) {
       const origin = new URL(baseURL).origin;
-      await page.route("**/*", (route) => {
-        const url = route.request().url();
-        const interne =
-          url.startsWith(origin) ||
-          url.startsWith("data:") ||
-          url.startsWith("blob:") ||
-          url.startsWith("about:");
-        return interne ? route.continue() : route.abort();
-      });
+
+      // Le filtre est dans le prédicat d'URL, pas dans le gestionnaire : ainsi
+      // les requêtes du site ne sont PAS interceptées du tout.
+      //
+      // La version naïve (`page.route("**/*", …)` puis `route.continue()` pour
+      // l'interne) marche la plupart du temps, mais fait repasser chaque
+      // ressource par la couche d'interception. Sous exécution parallèle, ça
+      // s'est traduit par un « SyntaxError: Invalid or unexpected token »
+      // intermittent au chargement d'un module ES : un run vert, le suivant
+      // rouge, sur le même commit. On ne touche donc plus qu'aux requêtes
+      // qu'on veut réellement couper.
+      await page.route(
+        (url) => {
+          const href = url.href;
+          if (href.startsWith(origin)) return false;
+          return !/^(data|blob|about):/.test(href);
+        },
+        (route) => route.abort(),
+      );
     }
     await use(page);
   },
