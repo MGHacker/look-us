@@ -65,7 +65,17 @@ export function watchProblems(page: Page, origin: string): PageProblems {
   });
 
   page.on("pageerror", (err) => {
-    const text = `${err.name}: ${err.message}`;
+    // La pile est jointe au message : sans elle, une erreur d'analyse syntaxique
+    // ne dit pas QUEL fichier est en cause, et le message seul
+    // (« SyntaxError: Invalid or unexpected token ») laisse démuni. La première
+    // ligne de pile porte l'URL et la position.
+    const origine = (err.stack ?? "")
+      .split("\n")
+      .map((l) => l.trim())
+      .find((l) => /https?:\/\//.test(l));
+    const text = origine
+      ? `${err.name}: ${err.message} — ${origine}`
+      : `${err.name}: ${err.message}`;
     if (!isBenign(text)) problems.consoleErrors.push(text);
   });
 
