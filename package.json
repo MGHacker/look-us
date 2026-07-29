@@ -6,6 +6,12 @@
   "description": "Look Us — app web statique (cockpit d'autorité). Aucune build ; tests du moteur via le runner natif de Node.",
   "scripts": {
     "test": "node --test",
-    "serve": "node _serve.mjs"
+    "serve": "node _serve.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
   }
 }

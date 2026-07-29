@@ -1,0 +1,76 @@
+name: E2E (Playwright)
+
+# Suite de bout en bout : le site est servi en local et testé dans un vrai
+# Chromium. Aucun secret, aucune dépendance à la prod : le job valide le code de
+# la branche, pas l'état du déploiement.
+#
+# Deux étages, volontairement :
+#
+#   1. « intégrité »  — bloquant. Le site se charge, aucun lien interne mort,
+#      aucune image cassée. Si ça casse, la PR ne passe pas : c'est une
+#      régression, pas une dette.
+#
+#   2. « qualité »    — non bloquant AUJOURD'HUI (`continue-on-error`). SEO
+#      technique, accessibilité et rendu mobile tournent et publient leur
+#      rapport, mais ne verrouillent pas la PR tant que la dette existante n'est
+#      pas résorbée. Une fois les sites au vert, retirer `continue-on-error`
+#      pour rendre cet étage bloquant lui aussi. Rien n'est masqué : les échecs
+#      restent visibles dans les logs et dans le rapport publié.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integrite:
+    name: Intégrité (bloquant)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Installer les dépendances
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - name: Installer Chromium (+ librairies système)
+        run: npx playwright install --with-deps chromium
+      - name: Fumée et liens
+        run: npx playwright test e2e/smoke.spec.ts e2e/links.spec.ts
+      - name: Publier le rapport en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-integrite
+          path: playwright-report/
+          retention-days: 7
+
+  qualite:
+    name: Qualité (rapport)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Installer les dépendances
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - name: Installer Chromium (+ librairies système)
+        run: npx playwright install --with-deps chromium
+      - name: SEO, accessibilité et mobile
+        run: npx playwright test e2e/seo.spec.ts e2e/a11y.spec.ts e2e/responsive.spec.ts
+      - name: Publier le rapport
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-qualite
+          path: playwright-report/
+          retention-days: 7

@@ -4,3 +4,9 @@ Thumbs.db
 desktop.ini
 _serve.mjs
 *.log
+
+# Outillage de test E2E
+node_modules/
+test-results/
+playwright-report/
+blob-report/
