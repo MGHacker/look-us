@@ -17,6 +17,7 @@
 // Aucune dépendance npm : il tourne tel quel en CI, hors ligne.
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
+import { readFileSync, existsSync } from "node:fs";
 import { extname, join, normalize, resolve, sep } from "node:path";
 
 const ARGS = process.argv.slice(2);
@@ -49,6 +50,54 @@ const MIME = {
   ".pdf": "application/pdf",
   ".mp4": "video/mp4",
 };
+
+/**
+ * Règles de `_redirects`, au format Netlify : `depuis  vers  [statut]`.
+ *
+ * Sans elles, le serveur de test répondait 404 sur toute URL qui n'existe que
+ * grâce à une redirection — un lien parfaitement valide en production était
+ * alors signalé comme mort. Sur growth-consult-site, ce fichier compte 239
+ * règles : les ignorer, c'est ne pas tester le site réel.
+ *
+ * Couvre l'essentiel : correspondance exacte, joker de fin `/*` avec `:splat`,
+ * et les statuts 301/302 (redirection) comme 200 (réécriture servie sur place).
+ */
+function chargerRedirections(root) {
+  const f = join(root, "_redirects");
+  if (!existsSync(f)) return [];
+  const regles = [];
+  for (const ligne of readFileSync(f, "utf8").split("\n")) {
+    const nette = ligne.trim();
+    if (!nette || nette.startsWith("#")) continue;
+    const [depuis, vers, statutBrut] = nette.split(/\s+/);
+    if (!depuis || !vers) continue;
+    regles.push({
+      depuis,
+      vers,
+      statut: Number(statutBrut ?? 301) || 301,
+      joker: depuis.endsWith("/*"),
+      prefixe: depuis.endsWith("/*") ? depuis.slice(0, -2) : depuis,
+    });
+  }
+  return regles;
+}
+
+const REDIRECTIONS = chargerRedirections(ROOT);
+
+/** Première règle qui correspond au chemin, ou null. */
+function trouverRedirection(pathname) {
+  for (const r of REDIRECTIONS) {
+    if (r.joker) {
+      if (pathname === r.prefixe || pathname.startsWith(r.prefixe + "/")) {
+        const splat = pathname.slice(r.prefixe.length).replace(/^\//, "");
+        return { ...r, cible: r.vers.replace(":splat", splat) };
+      }
+    } else if (pathname === r.depuis) {
+      return { ...r, cible: r.vers };
+    }
+  }
+  return null;
+}
 
 /** Chemin absolu sûr : interdit toute sortie de ROOT (path traversal). */
 function safeJoin(root, urlPath) {
@@ -87,6 +136,34 @@ const server = createServer(async (req, res) => {
   ]);
 
   if (!file) {
+    // Aucun fichier : les règles de `_redirects` prennent le relais, comme le
+    // fait l'hébergeur. Le fichier existant gagne toujours sur la règle, ce qui
+    // reproduit la précédence de Netlify hors redirection forcée.
+    const redir = trouverRedirection(pathname);
+    if (redir) {
+      if (redir.statut === 200) {
+        // Réécriture : on sert la cible sans changer l'URL.
+        const cible = safeJoin(ROOT, redir.cible);
+        const reecrit = await firstExisting([
+          cible,
+          cible ? join(cible, "index.html") : null,
+          cible && !extname(cible) ? `${cible}.html` : null,
+        ]);
+        if (reecrit) {
+          const body = await readFile(reecrit);
+          res.writeHead(200, {
+            "content-type": MIME[extname(reecrit).toLowerCase()] ?? "application/octet-stream",
+            "content-length": body.byteLength,
+            "cache-control": "no-store",
+          });
+          return res.end(body);
+        }
+      } else {
+        res.writeHead(redir.statut, { location: redir.cible, "content-length": 0 });
+        return res.end();
+      }
+    }
+
     // Application à routage client : toute route non résolue sur disque est
     // rendue par le squelette, qui décidera lui-même quoi afficher.
     // On exclut les requêtes d'assets (extension présente) : un .js manquant
