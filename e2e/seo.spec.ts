@@ -27,19 +27,43 @@ test.describe("SEO", () => {
       );
       if (site.titlePattern) expect(title).toMatch(site.titlePattern);
 
-      // Meta description : présente et de longueur exploitable.
-      const desc = await page
-        .locator('head meta[name="description"]')
-        .first()
-        .getAttribute("content");
-      expect(desc, `meta description sur ${route}`).toBeTruthy();
-      const len = desc!.trim().length;
-      expect(len, `description de ${route} trop courte`).toBeGreaterThanOrEqual(
-        site.seo.descriptionMin,
-      );
-      expect(len, `description de ${route} trop longue`).toBeLessThanOrEqual(
-        site.seo.descriptionMax,
-      );
+      // Une page peut être volontairement exclue de l'index (mentions légales,
+      // page de remerciement, copie intérimaire d'un autre site…).
+      const robotsMeta = page.locator('head meta[name="robots"]');
+      const robots =
+        (await robotsMeta.count()) > 0
+          ? ((await robotsMeta.first().getAttribute("content")) ?? "")
+          : "";
+      const indexable = !/noindex/i.test(robots);
+
+      // Meta description : présente et de longueur exploitable, sur les pages
+      // indexables seulement.
+      //
+      // Cette balise n'a qu'un consommateur : l'extrait affiché en résultat de
+      // recherche. Une page en `noindex` n'apparaît jamais dans ces résultats,
+      // donc ni sa présence ni sa longueur n'y changent quoi que ce soit. Juger
+      // une page 404 ou des mentions légales désindexées sur ce critère revient
+      // à demander de modifier le site pour faire plaisir au test.
+      //
+      // Le `count()` avant `getAttribute()` n'est pas cosmétique : sur une page
+      // sans balise, `getAttribute` attend la fin du timeout puis échoue sur un
+      // message opaque (« locator.getAttribute: Test timeout of 45000ms »), et
+      // l'assertion suivante, celle qui nomme le vrai défaut, n'est jamais
+      // atteinte. Constaté sur le /404 de poke-piece : 45 secondes perdues pour
+      // un diagnostic illisible.
+      if (indexable) {
+        const descMeta = page.locator('head meta[name="description"]');
+        const desc =
+          (await descMeta.count()) > 0 ? await descMeta.first().getAttribute("content") : null;
+        expect(desc, `meta description sur ${route}`).toBeTruthy();
+        const len = desc!.trim().length;
+        expect(len, `description de ${route} trop courte`).toBeGreaterThanOrEqual(
+          site.seo.descriptionMin,
+        );
+        expect(len, `description de ${route} trop longue`).toBeLessThanOrEqual(
+          site.seo.descriptionMax,
+        );
+      }
 
       // Un seul H1 : la hiérarchie du document doit être sans ambiguïté.
       const h1 = page.locator("h1");
