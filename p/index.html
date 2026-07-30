@@ -32,7 +32,7 @@
 
 <main class="shell shell-share">
   <div class="panel cockpit" id="cockpit" data-mode="live">
-    <p class="share-kicker"><span class="dot"></span> Score d'autorité · vérifié sur 5 dimensions</p>
+    <h1 class="share-kicker" style="margin-top:0;"><span class="dot"></span> Score d'autorité · vérifié sur 5 dimensions</h1>
     <div class="cockpit-top">
       <div class="score-block">
         <div class="score-num" id="score-num">—</div>
@@ -97,7 +97,7 @@
     return g;
   }
   var data = parseHash();
-  if (!data) { document.querySelector("#cockpit").innerHTML = '<p class="share-kicker">Score introuvable.</p><div class="share-cta"><a class="btn btn-gold" href="../">Mesure ton autorité →</a></div>'; return; }
+  if (!data) { document.querySelector("#cockpit").innerHTML = '<h1 class="share-kicker" style="margin-top:0;">Score introuvable.</h1><div class="share-cta"><a class="btn btn-gold" href="../">Mesure ton autorité →</a></div>'; return; }
   var total = data.t, tier = data.tier, d = data.d;
   var sn = document.querySelector("#score-num");
   sn.textContent = Math.round(total); sn.style.color = scoreColor(total);
