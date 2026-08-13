@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<!-- ============================================================
+     Look Us — GÉNÉRATEUR de l'image Open Graph d'accueil (1200×630).
+     Fichier de BUILD, pas une page du site : le préfixe "_" l'exclut
+     de la découverte E2E (voir e2e/kit/pages.ts, DEFAULT_IGNORE).
+     Rendu : navigateur headless --screenshot 1200×630 -> assets/og/og-home.png
+     (voir assets/og/README.md). Statique, sans JS : rendu déterministe.
+     ============================================================ -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,500;1,9..144,600&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  :root {
+    --ink: #100f0e; --line: #2e2920; --track: #251f18;
+    --paper: #ede7db; --dim: #b7ad9c; --muted: #8a8273;
+    --gold: #e9b949; --gold-soft: #c79a36;
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Hanken Grotesk", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  html, body { width: 1200px; height: 630px; }
+  body {
+    position: relative; overflow: hidden; background: var(--ink); color: var(--paper);
+    font-family: var(--sans); -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(60% 90% at 84% -12%, rgba(233,185,73,.16), transparent 60%),
+      radial-gradient(50% 60% at -8% 8%, rgba(200,85,61,.07), transparent 55%);
+  }
+  .grain {
+    position: absolute; inset: 0; pointer-events: none; opacity: .045;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .frame { position: absolute; inset: 26px; border: 2px solid var(--line); border-radius: 20px; }
+  .wrap { position: absolute; inset: 0; padding: 74px 80px; display: flex; }
+  .col-l { width: 620px; display: flex; flex-direction: column; }
+
+  .brand { display: flex; align-items: center; gap: 13px; }
+  .brand-name { font-family: var(--serif); font-weight: 600; font-size: 34px; letter-spacing: -.02em; }
+
+  .kicker {
+    margin-top: 40px; font-family: var(--mono); font-weight: 600; font-size: 16px;
+    letter-spacing: .16em; color: var(--gold);
+  }
+  .display {
+    margin-top: 20px; font-family: var(--serif); font-weight: 400; font-size: 78px;
+    line-height: .97; letter-spacing: -.035em;
+  }
+  .display em { font-weight: 600; font-style: italic; color: var(--gold); }
+  .display .ghost { color: transparent; -webkit-text-stroke: 1.4px var(--dim); opacity: .8; }
+  .lede {
+    margin-top: 26px; font-size: 23px; line-height: 1.4; color: var(--dim); max-width: 22ch;
+  }
+  .lede b { color: var(--paper); font-weight: 600; }
+
+  .rule {
+    position: absolute; left: 80px; bottom: 60px; display: flex; gap: 20px;
+    font-family: var(--mono); font-size: 15px; letter-spacing: .04em; color: var(--muted);
+  }
+  .rule b { color: var(--gold-soft); font-weight: 600; }
+
+  .watermark {
+    position: absolute; right: 80px; bottom: 60px; font-family: var(--mono);
+    font-size: 18px; color: var(--gold-soft);
+  }
+  .radar { position: absolute; right: 30px; top: 112px; }
+  .rlabel { font-family: var(--mono); font-size: 15px; fill: var(--muted); }
+</style>
+</head>
+<body>
+  <div class="grain"></div>
+  <div class="frame"></div>
+
+  <!-- Radar 5 dimensions (coordonnées pré-calculées) -->
+  <svg class="radar" width="470" height="403" viewBox="735 108 466 400" aria-hidden="true">
+    <!-- grilles -->
+    <polygon points="958.0,263.9 1007.6,299.9 988.6,358.2 927.4,358.2 908.4,299.9" fill="none" stroke="#2e2920" stroke-width="1" opacity=".45"/>
+    <polygon points="958.0,211.7 1057.2,283.8 1019.3,400.4 896.7,400.4 858.8,283.8" fill="none" stroke="#2e2920" stroke-width="1" opacity=".35"/>
+    <polygon points="958.0,158.0 1108.3,267.2 1050.9,443.8 865.1,443.8 807.7,267.2" fill="none" stroke="#2e2920" stroke-width="1.2" opacity=".55"/>
+    <!-- axes -->
+    <g stroke="#2e2920" stroke-width="1" opacity=".4">
+      <line x1="958" y1="316" x2="958.0" y2="158.0"/>
+      <line x1="958" y1="316" x2="1108.3" y2="267.2"/>
+      <line x1="958" y1="316" x2="1050.9" y2="443.8"/>
+      <line x1="958" y1="316" x2="865.1" y2="443.8"/>
+      <line x1="958" y1="316" x2="807.7" y2="267.2"/>
+    </g>
+    <!-- polygone valeur -->
+    <polygon points="958.0,221.2 1081.2,276.0 1023.0,405.5 907.9,385.0 894.9,295.5" fill="rgba(233,185,73,.14)" stroke="#e9b949" stroke-width="2"/>
+    <g fill="#e9b949">
+      <circle cx="958.0" cy="221.2" r="3.4"/><circle cx="1081.2" cy="276.0" r="3.4"/>
+      <circle cx="1023.0" cy="405.5" r="3.4"/><circle cx="907.9" cy="385.0" r="3.4"/>
+      <circle cx="894.9" cy="295.5" r="3.4"/>
+    </g>
+    <circle cx="958" cy="316" r="2.6" fill="#c79a36"/>
+    <!-- libellés -->
+    <text class="rlabel" x="958.0" y="126.4" text-anchor="middle">Reach</text>
+    <text class="rlabel" x="1128" y="261" text-anchor="middle">Resonance</text>
+    <text class="rlabel" x="1069.4" y="474" text-anchor="middle">Consistency</text>
+    <text class="rlabel" x="846.6" y="474" text-anchor="middle">Momentum</text>
+    <text class="rlabel" x="790" y="261" text-anchor="middle">Breadth</text>
+  </svg>
+
+  <div class="wrap">
+    <div class="col-l">
+      <div class="brand">
+        <svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true">
+          <circle cx="20" cy="20" r="15" fill="none" stroke="#e9b949" stroke-width="2"/>
+          <circle cx="20" cy="20" r="8.5" fill="none" stroke="#e9b949" stroke-width="2" opacity=".55"/>
+          <circle cx="20" cy="20" r="3.2" fill="#e9b949"/>
+        </svg>
+        <span class="brand-name">Look&nbsp;Us</span>
+      </div>
+
+      <div class="kicker">INSTRUMENT D'AUTORITÉ · E-RÉPUTATION B2B</div>
+
+      <h1 class="display">
+        Ce que tu publies<br />
+        a du <em>poids</em>.<br />
+        <span class="ghost">Prouve-le.</span>
+      </h1>
+
+      <p class="lede">Ton autorité LinkedIn — <b>pas ton nombre de followers.</b></p>
+    </div>
+  </div>
+
+  <div class="rule">
+    <span>REACH·<b>15</b></span><span>RESO·<b>35</b></span><span>CONSIST·<b>20</b></span><span>MOMENT·<b>20</b></span><span>BREADTH·<b>10</b></span>
+  </div>
+  <div class="watermark">look-us</div>
+</body>
+</html>
